@@ -38,23 +38,23 @@ learning journey. Most importantly, I ignited my curiosity.
 As I leave Phase 0, there are five main categories of knowledge I'd like to continue building
 on. Here are a few of the burning questions I have for each that will inform my next phases:
 
-- **Math & Theory**: TBD
-- **Model Architecture**: TBD
-- **Application Development**: TBD
-- **Cloud Operations**: TBD
-- **Hardware & Performance**: TBD
+- **Math & Theory**: Begin to understand what specific math is most prevalent in AI. Learn what it's doing at a conceptual level.
+- **Model Architecture**: Begin to understand the major components of the transformer architecture and be conversant in what each layer does.
+- **Application Development**: Develop the practical skills to build basic AI applications from scratch on my own, and to be able to contribute to more complex team projects.
+- **Cloud Operations**: Understand how AI models are deployed and scaled in the cloud. Learn how to deploy small models in AWS.
+- **Hardware & Performance**: Learn how to use low level cloud hardware (e.g. Lambda) to perform tutorial level training with PyTorch.
 
 My full Phase 0 reflection is available [here](reflections/phase-0.md).
 
 ### Phase 1
 
-| Track | Learn to Know | Learn to Do | Reflection |
-| --- | --- | --- | --- |
-| Math & Theory |  |  |  |
-| Model Architecture |  |  |  |
-| Application Development |  |  |  |
-| Cloud Operations |  |  |  |
-| Hardware & Performance |  |  |  |
+| Track                   | Learn to Know | Learn to Do | Reflection |
+| ---                     | ---           | ---         | ---        |
+| Math & Theory           |               |             |            |
+| Model Architecture      |               |             |            |
+| Application Development | [LangChain Academy Courses](https://academy.langchain.com/)<br> [DeepLearning.AI LangChain Courses](https://www.deeplearning.ai/courses/?courses_date_desc%5BrefinementList%5D%5Bpartnership%5D%5B0%5D=LangChain) | [Basic Agent with Atlas](projects/basic-agent-with-atlas/README.md) |            |
+| Cloud Operations        |               |             |            |
+| Hardware & Performance  |               |             |            |
 
 ### Inventory for Future Phases
 
