@@ -36,6 +36,8 @@ class DinnerPartyDB:
         self.guests: Collection = self.database.get_collection("guests")
         self.parties: Collection = self.database.get_collection("parties")
 
+        self.parties.create_index([("name", 1)], unique=True)
+
     def list_guests(self) -> None:
         """List all guests in the database with their personalities.
         
