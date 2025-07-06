@@ -1,5 +1,5 @@
 """Module to manage dinner party simulation."""
-
+import json
 from typing import List, Optional
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -16,6 +16,7 @@ class DinnerParty:
 
         self.db = DinnerPartyDB()
         self.model = init_chat_model("gpt-4o", model_provider="openai")
+        self.model_lite = init_chat_model("gpt-4o-mini", model_provider="openai")
 
     def __repr__(self) -> str:
         return f"DinnerParty(name={self.name}, guests={self.guests}, messages={self.messages})"
@@ -63,12 +64,15 @@ class DinnerParty:
             self.guests = guests
         else:
             self.guests = []
-            guest_name = input("Who would you like to invite to your dinner party? Enter one name at a time. ")
-            self.guests.append(guest_name)
             while True:
-                guest_name = input("Who else would you like to invite? (or 'done' to finish) ")
+                guest_name = input("Add a guest, entering one name at a time (or 'done' to finish): ")
                 if guest_name.lower() == "done":
                     break
+                is_famous = self.is_guest_famous(guest_name)
+                if not is_famous:
+                    print(f"{guest_name} is not a famous personality. Please try again.")
+                    continue
+                print(f"Adding {guest_name}")
                 self.guests.append(guest_name)
 
     def save(self) -> str:
@@ -88,6 +92,17 @@ class DinnerParty:
             self.messages = party.get("messages", [])
         else:
             raise ValueError(f"Dinner party '{name}' not found.")
+
+    def is_guest_famous(self, guest: str) -> bool:
+        """Check if a guest is famous."""
+        prompt = f"""Is {guest} a famous personality? They can be real or fictional, but
+        they should be someone you know enough about to reasonably impersonate.
+
+        If {guest} is famous, return True. If {guest} is not famous, return False.
+        """
+        response = self.model_lite.invoke(prompt)
+        return response.content == "True"
+
 
     def handle_turn(self, message: Optional[str] = None) -> None:
         """Handle a turn in the dinner party."""
