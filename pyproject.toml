@@ -5,6 +5,7 @@ description = "Monorepo for AI learning journey"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "anthropic>=0.40.0",
     "beanie[ocsp]>=2.0.0",
     "fastapi[standard]>=0.116.1",
     "langchain[anthropic,community,openai]>=0.3.26",

@@ -767,6 +767,7 @@ name = "learning-ai"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "anthropic" },
     { name = "beanie", extra = ["ocsp"] },
     { name = "fastapi", extra = ["standard"] },
     { name = "langchain", extra = ["anthropic", "community", "openai"] },
@@ -777,6 +778,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anthropic", specifier = ">=0.40.0" },
     { name = "beanie", extras = ["ocsp"], specifier = ">=2.0.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.116.1" },
     { name = "langchain", extras = ["anthropic", "community", "openai"], specifier = ">=0.3.26" },
