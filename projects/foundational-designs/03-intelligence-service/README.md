@@ -23,16 +23,18 @@ Rails codebase. If this service is compromised, the attacker gets LLM access,
 not your production database.
 
 **3. The AI team iterates independently.** Model swaps, prompt tuning, and new
-features ship without touching the Rails release cycle. The AI team deploys
-multiple times a day; the Rails team deploys weekly. Different cadences,
-different concerns, separate services.
+features ship without touching the Rails release cycle. Each team releases on its own cadence, which may ebb and flow over time.
+Separate services, separate concerns.
 
 **"Isn't this overkill?"** For a single LLM proxy call, yes — a Ruby gem would
-suffice. But you are building toward conversation memory, RAG pipelines,
-multi-step agents, and tool-using workflows. You will hit the limits of a
-Rails-embedded approach within months. The service boundary pays for itself the
-moment you need to maintain conversation state or orchestrate multi-step LLM
-workflows.
+suffice. But even in the short term, a dedicated service gives you consolidated
+AI infrastructure and consistent use of first-class Python SDKs and libraries,
+rather than scattering AI features across the codebase and losing track of where
+and how each one was implemented. And you are building toward conversation
+memory, RAG pipelines, multi-step agents, and tool-using workflows. You will hit
+the limits of a Rails-embedded approach within months. The service boundary pays
+for itself the moment you need to maintain conversation state or orchestrate
+multi-step LLM workflows.
 
 ---
 
