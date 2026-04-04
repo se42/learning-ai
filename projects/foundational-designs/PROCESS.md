@@ -126,7 +126,7 @@ Claude ran automated verification for both modules:
 
 This caught the deprecation warning and confirmed everything works.
 
-## 7. Review, Questions, and Iteration
+## 8. Review, Questions, and Iteration
 
 After the initial build was complete, we shifted into a review cycle. This
 is where the human leads and the AI assists:
@@ -155,17 +155,115 @@ users would be willing to run Docker.
 ## Timeline
 
 The entire process — from reading the brief to verified deliverable — took
-one conversation session. The rough breakdown:
+one conversation session. The review and iteration phase started in a second
+session. The rough breakdown:
 
-| Phase | What Happened |
-|-------|---------------|
-| Brief + Questions | Read CLAUDE.md, asked 4 clarifying questions |
-| Research | 3 parallel web research agents |
-| Planning | Plan mode with structured plan file, one round of feedback |
-| Implementation | 2 parallel background agents + direct skill writing |
-| Integration | Developer skills, architecture diagram, root README |
-| Verification | Automated tests on both modules |
-| Review + Iteration | Human-led review, questions, and targeted edits across the project |
+| Phase | What Happened | Human Time | AI Time |
+|-------|---------------|------------|---------|
+| Brief + Questions | Read CLAUDE.md, asked 4 clarifying questions | ~15 min writing, ~5-10 min answering | Minutes |
+| Research | 3 parallel web research agents | Waiting | ~15 min |
+| Planning | Plan mode with structured plan file, one round of feedback | ~5 min reviewing | ~10 min |
+| Implementation | 2 parallel background agents + direct skill writing | Waiting | ~30 min |
+| Integration | Developer skills, architecture diagram, root README | Waiting | ~10 min |
+| Verification | Automated tests on both modules | Waiting | Minutes |
+| Review + Iteration | Human-led review, questions, and targeted edits | ~1+ hours reading, ongoing discussion | Minutes per edit |
+
+## The Real Time Investment
+
+The asymmetry in the timeline above is striking: **~15 minutes of
+writing the brief produced ~1 hour of AI work, which then required
+over an hour of human review** just to read through all the output and
+begin asking questions. The brief is the highest-leverage artifact in
+the entire process. Every minute spent clarifying your intent saves
+multiples of that in review and rework.
+
+### What the brief got right
+
+Looking back at the original `CLAUDE.md`, several choices paid
+outsized dividends:
+
+**Explained the "why" behind the architecture, not just the "what."**
+The brief didn't just say "build an MCP server." It explained that the
+team chose SOA for three specific reasons (focus hub, Python access,
+auth safety) and that they'd eventually graduate to agentic workloads.
+This context shaped everything — from how the READMEs explained the
+architecture to how the intelligence service was scoped. Without it,
+Claude would have built a generic demo instead of one framed around a
+real team's migration path.
+
+**Named specific technologies as starting points.** Mentioning FastMCP,
+OpenAPI specs, and the SKILL.md spec gave Claude concrete research
+targets. The brief even suggested the `FastMCP.from_openapi()` approach.
+This meant the research phase was focused and efficient rather than
+exploratory. If you know the tools exist, say so — even if you're not
+sure they're the right choice.
+
+**Asked specific questions instead of open-ended ones.** The five
+numbered questions each became a concrete section of the final README.
+"Are these solid first steps?" produced a direct yes/no with evidence.
+"What next-step complexities justify the microservice?" produced a
+ranked list that the team can actually reference when debating YAGNI.
+Vague prompts get vague output; specific questions get specific answers.
+
+**Described the "naive to curated" progression explicitly.** The brief
+said "start with a naive MCP server that mirrors the API, then build
+curated tools." This directly produced the two-server demo
+(`server_from_spec.py` and `server_curated.py`) which became one of
+the most instructive parts of the module. The progression was already
+in the brief — Claude just had to build it.
+
+**Set clear scope boundaries.** Phrases like "focus on FUNDAMENTALS"
+and "I didn't tell you all about the details of our service, so just
+focus on FUNDAMENTALS" appeared multiple times. This kept the output
+from sprawling into advanced topics (RAG pipelines, agent
+checkpointing, OAuth flows) that would have diluted the learning value.
+
+### What the brief missed — and what it cost
+
+**Distribution was framed as Docker-only.** The brief said "a Docker
+image our users can run in their IDE" — a reasonable starting point,
+but it didn't consider users who can't or won't run Docker. This
+assumption propagated through every file Claude produced: READMEs, IDE
+configs, architecture diagrams, even the Dockerfile header comments.
+When the review cycle surfaced this gap, fixing it required edits
+across 9 files. If the brief had said "distributed via Docker or
+Python package," the dual-path approach would have been baked in from
+the start.
+
+**Tooling preferences weren't stated.** The brief didn't mention `uv`,
+`pip`, or any preference for dependency management. Claude had to ask.
+The answer ("use uv") then required a plan revision. Similarly, the
+brief didn't say where developer skills should live vs. deliverable
+skills — that distinction came up during plan review and required
+another revision. These weren't hard to fix at the planning stage, but
+they're examples of decisions you already know the answer to. If you
+know, say so upfront.
+
+**LLM provider preference wasn't specified.** Should the demos use
+Claude? OpenAI? Be provider-agnostic? This was another clarifying
+question that could have been preempted. The answer (provider-agnostic,
+using OpenAI and Gemini) affected the intelligence service's entire
+architecture — its model routing, its config structure, its
+dependencies. One sentence in the brief would have eliminated one
+round-trip.
+
+### The lesson
+
+None of the post-hoc clarifications were fatal. They were caught early
+(during planning or review) and fixed with modest effort. But they
+illustrate a pattern: **things you already know but don't write down
+become questions you have to answer later, and then edits you have to
+review.** Each one is a small cost, but they compound.
+
+The brief doesn't need to be perfect. But if you find yourself thinking
+"Claude will probably figure this out" — stop and write it down. The 30
+seconds it takes to type "use uv, not pip" or "some users can't run
+Docker" saves minutes of clarification and review later. When you're
+asking an AI to produce 30+ files in parallel, those small ambiguities
+multiply.
+
+**The heuristic:** If a teammate would ask you about it in a design
+review, put it in the brief.
 
 ## Tips for Your Own Projects
 
