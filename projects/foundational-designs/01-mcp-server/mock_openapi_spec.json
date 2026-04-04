@@ -1,0 +1,727 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Acme Platform API",
+    "description": "The Acme Platform API provides programmatic access to support cases, customer records, knowledge base articles, and internal team operations. This is version 3 of the API, the current stable release.",
+    "version": "3.0.0",
+    "contact": {
+      "name": "Acme Platform Engineering",
+      "email": "platform-eng@acme-platform.example.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.acme-platform.example.com/api/v3",
+      "description": "Production API server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "cases",
+      "description": "Support case management — create, list, and inspect support cases filed by customers."
+    },
+    {
+      "name": "customers",
+      "description": "Customer records — look up customer profiles, tiers, and account details."
+    },
+    {
+      "name": "knowledge",
+      "description": "Knowledge base articles — search and browse self-service help content."
+    },
+    {
+      "name": "internal",
+      "description": "Internal team operations — actions restricted to support agents and internal tooling."
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/cases": {
+      "get": {
+        "operationId": "listCases",
+        "tags": ["cases"],
+        "summary": "List support cases",
+        "description": "Returns a paginated list of support cases. Filter by status or customer to narrow results. Results are ordered by creation date, newest first.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter cases by their current status.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["open", "pending", "resolved", "closed"]
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "description": "Filter cases belonging to a specific customer.",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination (1-indexed, default 1).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A paginated list of cases.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CaseSummary"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCase",
+        "tags": ["cases"],
+        "summary": "Create a new support case",
+        "description": "Opens a new support case. The case is assigned 'open' status automatically. Priority defaults to 'medium' if not specified.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["subject", "description", "customer_id"],
+                "properties": {
+                  "subject": {
+                    "type": "string",
+                    "description": "A short summary of the issue.",
+                    "maxLength": 200,
+                    "example": "Unable to export report to PDF"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Detailed description of the issue, including reproduction steps if applicable.",
+                    "example": "When clicking 'Export to PDF' on the monthly revenue report, the page shows a spinner for 30 seconds then displays 'Export failed'. This started after the latest update."
+                  },
+                  "customer_id": {
+                    "type": "integer",
+                    "description": "The ID of the customer filing this case.",
+                    "example": 42
+                  },
+                  "priority": {
+                    "type": "string",
+                    "description": "Case priority level. Defaults to 'medium'.",
+                    "enum": ["low", "medium", "high", "critical"],
+                    "default": "medium"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Case created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Case"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "description": "Validation error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}": {
+      "get": {
+        "operationId": "getCase",
+        "tags": ["cases"],
+        "summary": "Get case detail",
+        "description": "Returns the full detail for a single support case, including its complete notes history. Notes are ordered chronologically, oldest first.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the case.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full case detail with notes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Case"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/customers": {
+      "get": {
+        "operationId": "listCustomers",
+        "tags": ["customers"],
+        "summary": "List customers",
+        "description": "Returns a list of customer records. Use the search parameter to filter by name or email. Results are ordered alphabetically by name.",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search customers by name or email (case-insensitive partial match).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of customers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Customer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/customers/{id}": {
+      "get": {
+        "operationId": "getCustomer",
+        "tags": ["customers"],
+        "summary": "Get customer detail",
+        "description": "Returns full profile for a single customer, including their account tier, contact information, and account creation date.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the customer.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full customer profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/articles": {
+      "get": {
+        "operationId": "listArticles",
+        "tags": ["knowledge"],
+        "summary": "List knowledge base articles",
+        "description": "Returns knowledge base articles, optionally filtered by category or keyword search. Articles are ordered by last-updated date, newest first.",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Filter articles by category slug (e.g., 'billing', 'integrations', 'getting-started').",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Keyword search across article titles and content.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of knowledge base articles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Article"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/articles/search": {
+      "get": {
+        "operationId": "searchArticles",
+        "tags": ["knowledge"],
+        "summary": "Semantic article search",
+        "description": "Performs a semantic (embedding-based) search across the knowledge base. Unlike the keyword search on /articles, this endpoint understands meaning — searching for 'can't log in' will match articles about password resets and SSO issues. Returns articles ranked by relevance score.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Natural language search query.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Articles ranked by semantic relevance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/Article"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "relevance_score": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "Semantic similarity score between 0 and 1.",
+                                "example": 0.87
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/cases/{case_id}/notes": {
+      "post": {
+        "operationId": "addCaseNote",
+        "tags": ["internal"],
+        "summary": "Add an internal note to a case",
+        "description": "Appends an internal note to a support case. Internal notes are visible to support agents but NOT to the customer. Use this for investigation details, internal discussion, and triage rationale.",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the case.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["body"],
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "description": "The content of the internal note. Supports Markdown formatting.",
+                    "example": "Checked the export service logs — the PDF renderer is timing out on reports with >500 rows. Escalating to the platform team."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Note added successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Token",
+        "description": "Your Rails API token. Pass as: Authorization: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "CaseSummary": {
+        "type": "object",
+        "description": "A compact representation of a support case, used in list views.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1024
+          },
+          "subject": {
+            "type": "string",
+            "example": "Unable to export report to PDF"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "pending", "resolved", "closed"],
+            "example": "open"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "example": "high"
+          },
+          "customer_id": {
+            "type": "integer",
+            "example": 42
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-15T10:30:00Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-15T14:22:00Z"
+          }
+        }
+      },
+      "Case": {
+        "type": "object",
+        "description": "Full support case detail, including the complete notes history.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1024
+          },
+          "subject": {
+            "type": "string",
+            "example": "Unable to export report to PDF"
+          },
+          "description": {
+            "type": "string",
+            "example": "When clicking 'Export to PDF' on the monthly revenue report, the page shows a spinner for 30 seconds then displays 'Export failed'. This started after the latest update."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "pending", "resolved", "closed"],
+            "example": "open"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "example": "high"
+          },
+          "customer_id": {
+            "type": "integer",
+            "example": 42
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-15T10:30:00Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-15T14:22:00Z"
+          },
+          "notes": {
+            "type": "array",
+            "description": "Internal notes attached to this case, ordered chronologically.",
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            }
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "description": "A customer account record.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 42
+          },
+          "name": {
+            "type": "string",
+            "example": "Globex Corporation"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "support@globex.example.com"
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["free", "pro", "enterprise"],
+            "example": "enterprise"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-10T08:00:00Z"
+          }
+        }
+      },
+      "Article": {
+        "type": "object",
+        "description": "A knowledge base article.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 301
+          },
+          "title": {
+            "type": "string",
+            "example": "How to export reports to PDF"
+          },
+          "content": {
+            "type": "string",
+            "description": "The full article body in Markdown format.",
+            "example": "# Exporting Reports\n\nTo export a report to PDF, navigate to the report view and click **Export > PDF**..."
+          },
+          "category": {
+            "type": "string",
+            "example": "reporting"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["export", "pdf", "reports"]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-02-20T16:45:00Z"
+          }
+        }
+      },
+      "Note": {
+        "type": "object",
+        "description": "An internal note on a support case. Visible to agents only, not customers.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 5001
+          },
+          "case_id": {
+            "type": "integer",
+            "example": 1024
+          },
+          "body": {
+            "type": "string",
+            "example": "Checked export service logs — PDF renderer timing out on large reports. Escalating."
+          },
+          "author": {
+            "type": "string",
+            "description": "The name or email of the agent who wrote the note.",
+            "example": "alice@acme-platform.example.com"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-15T11:05:00Z"
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "description": "Pagination metadata for list endpoints.",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "example": 1
+          },
+          "per_page": {
+            "type": "integer",
+            "example": 25
+          },
+          "total": {
+            "type": "integer",
+            "example": 73
+          },
+          "total_pages": {
+            "type": "integer",
+            "example": 3
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "description": "Returned when request body fails validation.",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Validation failed"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "example": "subject"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "can't be blank"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Authentication failed. Check that your Bearer token is valid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Invalid or expired token"
+                }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The requested resource was not found.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

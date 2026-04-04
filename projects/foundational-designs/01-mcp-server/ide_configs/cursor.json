@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "Cursor MCP server configuration.",
+    "Place this in your project's .cursor/mcp.json or in ~/.cursor/mcp.json for global config.",
+    "See: https://docs.cursor.com/context/model-context-protocol"
+  ],
+  "mcpServers": {
+    "acme-platform": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "RAILS_API_TOKEN", "acme-mcp:latest"],
+      "env": {
+        "RAILS_API_TOKEN": "your-token-here"
+      }
+    },
+    "acme-platform-local": {
+      "_comment": "Alternative: run directly with Python (no Docker). Requires uv sync first.",
+      "command": "python",
+      "args": ["server_from_spec.py"],
+      "cwd": "/path/to/01-mcp-server",
+      "env": {
+        "RAILS_API_TOKEN": "your-token-here"
+      }
+    }
+  }
+}

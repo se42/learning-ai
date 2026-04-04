@@ -1,0 +1,100 @@
+[
+  {
+    "id": "art-001",
+    "title": "Getting Started with the Acme Platform API",
+    "content": "The Acme Platform API uses REST conventions with JSON payloads. All endpoints are served over HTTPS at api.acme.com/v2. To make your first request, you'll need an API key from your dashboard under Settings > API Keys. Create a key, copy the token, and include it as a Bearer token in the Authorization header of every request. A simple test: GET /v2/me returns your account info. If you get a 200 with your email address, you're authenticated and ready to go. The API returns JSON for all responses, including errors. Rate limits are 100 requests per minute for standard accounts; see the rate limiting article for details on higher tiers.",
+    "category": "getting-started",
+    "tags": ["api", "authentication", "quickstart"]
+  },
+  {
+    "id": "art-002",
+    "title": "Authentication and API Tokens",
+    "content": "Acme uses Bearer token authentication for all API requests. Generate tokens in your dashboard under Settings > API Keys. Each token has a configurable scope: read-only tokens can fetch data but not modify it; read-write tokens have full access. Tokens can also be scoped to specific resources (e.g., only support cases). We recommend creating separate tokens for each integration. Tokens do not expire by default, but you can set an expiration date when creating them. To rotate a token, create a new one, update your integration, then revoke the old token. Revoked tokens immediately stop working. If you suspect a token has been compromised, revoke it immediately from the dashboard — there is no grace period.",
+    "category": "authentication",
+    "tags": ["api", "tokens", "security", "scopes"]
+  },
+  {
+    "id": "art-003",
+    "title": "Managing Support Cases via the API",
+    "content": "Support cases are the core resource in the Acme helpdesk module. Create a case with POST /v2/cases, passing a subject, description, priority (low, normal, high, urgent), and optionally a customer_id to associate it with an existing contact. Cases move through a lifecycle: open > in_progress > waiting_on_customer > resolved > closed. Update the status with PATCH /v2/cases/:id. You can add internal notes (visible only to agents) or public replies (sent to the customer) via POST /v2/cases/:id/comments. Each comment requires a body and a visibility field (internal or public). Cases support custom fields — configure them in Settings > Case Fields, then pass values in the custom_fields object when creating or updating.",
+    "category": "support",
+    "tags": ["cases", "support", "lifecycle", "comments"]
+  },
+  {
+    "id": "art-004",
+    "title": "Customer Tiers and Billing",
+    "content": "Acme offers three account tiers: Starter, Professional, and Enterprise. Starter includes 3 agent seats, 1,000 API calls per day, and email support. Professional adds unlimited agents, 50,000 API calls per day, phone support, and access to the analytics dashboard. Enterprise includes everything in Professional plus SSO, audit logs, a dedicated account manager, and custom API rate limits. Billing is monthly or annual (annual saves 20%). Manage your subscription at Settings > Billing. Upgrades take effect immediately; downgrades take effect at the end of the current billing cycle. Usage beyond your tier's API call limit returns 429 Too Many Requests responses. Overages are not automatically charged — your requests are simply throttled until the next day.",
+    "category": "billing",
+    "tags": ["tiers", "pricing", "billing", "api-limits"]
+  },
+  {
+    "id": "art-005",
+    "title": "Knowledge Base Management",
+    "content": "The Acme knowledge base lets you publish articles that customers can search and read without contacting support. Articles are organized into collections (like folders). Create a collection with POST /v2/kb/collections, then add articles with POST /v2/kb/articles. Each article has a title, body (Markdown supported), status (draft or published), and optional tags for search. Published articles are immediately visible in your customer-facing help center. Draft articles are only visible to agents. You can reorder articles within a collection using the position field. The knowledge base supports full-text search — customers can search by keyword, and results are ranked by relevance. Track article performance with the analytics endpoint: GET /v2/kb/articles/:id/stats returns view count, helpfulness ratings, and search impressions.",
+    "category": "knowledge-base",
+    "tags": ["kb", "articles", "collections", "self-service"]
+  },
+  {
+    "id": "art-006",
+    "title": "Webhooks and Event Notifications",
+    "content": "Webhooks let your systems react to events in real time. Instead of polling the API for changes, register a webhook URL and Acme will POST event payloads to it when things happen. Supported events include case.created, case.updated, case.resolved, customer.created, article.published, and more. Register webhooks at Settings > Webhooks or via POST /v2/webhooks. Each webhook includes a secret token — use it to verify that incoming requests are genuinely from Acme by checking the X-Acme-Signature header (HMAC-SHA256 of the payload). Webhooks that fail (non-2xx response) are retried with exponential backoff: 1 minute, 5 minutes, 30 minutes, 2 hours, then daily for up to 3 days. After that, the webhook is automatically disabled and you'll receive an email notification.",
+    "category": "integrations",
+    "tags": ["webhooks", "events", "integrations", "real-time"]
+  },
+  {
+    "id": "art-007",
+    "title": "Rate Limiting and Best Practices",
+    "content": "All API endpoints are rate limited to protect service quality. Standard accounts get 100 requests per minute; Professional accounts get 500; Enterprise accounts get custom limits. Rate limit status is returned in response headers: X-RateLimit-Limit (your limit), X-RateLimit-Remaining (requests left), and X-RateLimit-Reset (Unix timestamp when the window resets). When you hit the limit, you'll get a 429 Too Many Requests response with a Retry-After header. Best practices for staying within limits: use webhooks instead of polling, cache responses that don't change frequently, batch operations where possible (the bulk endpoint handles up to 100 operations per request), and implement exponential backoff for retries. If you consistently need higher limits, contact sales about Enterprise pricing.",
+    "category": "best-practices",
+    "tags": ["rate-limiting", "performance", "best-practices", "headers"]
+  },
+  {
+    "id": "art-008",
+    "title": "Error Handling and Status Codes",
+    "content": "The Acme API uses standard HTTP status codes. 200 OK for successful requests, 201 Created for successful resource creation, 204 No Content for successful deletions. Client errors: 400 Bad Request (malformed JSON or missing required fields), 401 Unauthorized (missing or invalid token), 403 Forbidden (token lacks required scope), 404 Not Found (resource doesn't exist or you don't have access), 422 Unprocessable Entity (valid JSON but business logic violation, like setting a case to 'resolved' before it's been assigned). Server errors: 500 Internal Server Error (our fault — these are automatically reported to our team), 503 Service Unavailable (maintenance window, usually under 5 minutes). All error responses include a JSON body with an error code, message, and request_id you can reference when contacting support.",
+    "category": "reference",
+    "tags": ["errors", "status-codes", "debugging", "troubleshooting"]
+  },
+  {
+    "id": "art-009",
+    "title": "Bulk Operations",
+    "content": "For efficiency, use bulk endpoints when operating on multiple resources. POST /v2/bulk/cases accepts an array of up to 100 case operations (create, update, or delete) in a single request. Each operation in the array is independent — if one fails, the others still succeed. The response includes a results array matching the input order, with status and either the resource or an error for each operation. Bulk operations count as a single API call for rate limiting purposes, making them essential for high-volume integrations. Common use cases: importing cases from another system, bulk-updating priorities after a triage meeting, or archiving resolved cases older than 90 days. The bulk endpoint supports the same fields as individual endpoints — there's no reduced feature set.",
+    "category": "reference",
+    "tags": ["bulk", "batch", "performance", "import"]
+  },
+  {
+    "id": "art-010",
+    "title": "Search and Filtering",
+    "content": "Most list endpoints support search and filtering. Use the q parameter for full-text search across relevant fields: GET /v2/cases?q=billing+issue searches case subjects and descriptions. Filter by field values using query parameters: GET /v2/cases?status=open&priority=high returns only open, high-priority cases. Date filters use ISO 8601 format: created_after=2024-01-01T00:00:00Z. Combine multiple filters with & — all filters are AND-ed together. Sort results with sort_by and sort_order parameters: GET /v2/cases?sort_by=created_at&sort_order=desc. Pagination uses cursor-based pagination: the response includes a next_cursor field; pass it as the cursor parameter in your next request. Page size defaults to 25, configurable up to 100 with the per_page parameter.",
+    "category": "reference",
+    "tags": ["search", "filtering", "pagination", "sorting"]
+  },
+  {
+    "id": "art-011",
+    "title": "User Roles and Permissions",
+    "content": "Acme supports four built-in roles: Owner (full access, can manage billing and delete the account), Admin (full access except billing and account deletion), Agent (can manage cases, customers, and knowledge base articles), and Viewer (read-only access to all resources). Roles are assigned per user in Settings > Team. Custom roles are available on Enterprise plans — define granular permissions like 'can create cases but not delete them' or 'can view analytics but not customer details'. API tokens inherit the permissions of the user who created them, so a token created by an Agent cannot perform Admin actions. When a user's role changes, all their tokens are immediately updated to reflect the new permissions. We recommend using the principle of least privilege: give each user and token only the permissions they need.",
+    "category": "administration",
+    "tags": ["roles", "permissions", "security", "team"]
+  },
+  {
+    "id": "art-012",
+    "title": "Data Export and Compliance",
+    "content": "Export your data at any time via the export API. POST /v2/exports creates an export job for a specified resource type (cases, customers, articles) and date range. The job runs asynchronously — poll GET /v2/exports/:id for status. When complete, the response includes a download URL for a CSV or JSON file (specify format in the request). Export files are available for 24 hours after generation. For GDPR compliance, use the customer data endpoints: GET /v2/customers/:id/data returns all data associated with a customer (cases, comments, profile info), and DELETE /v2/customers/:id/data permanently deletes all customer data. Deletion is irreversible and propagates to all associated resources. Both operations are logged in the audit trail (Enterprise only). We also support automatic data retention policies — configure in Settings > Compliance to auto-delete resolved cases after a specified period.",
+    "category": "compliance",
+    "tags": ["export", "gdpr", "compliance", "data", "privacy"]
+  },
+  {
+    "id": "art-013",
+    "title": "Setting Up Integrations with Slack and Email",
+    "content": "Acme integrates with Slack and email out of the box. For Slack: go to Settings > Integrations > Slack, authorize the Acme Slack app, then choose a channel for notifications. You can configure which events trigger Slack messages (new cases, resolved cases, SLA breaches) and whether to include case details or just a summary with a link. For email: configure inbound email at Settings > Integrations > Email. Acme provides a forwarding address — set it as a forwarding rule in your support inbox. Incoming emails automatically create cases with the sender as the customer. Replies to case notification emails are threaded into the correct case. Email attachments are stored and linked to the case. Both integrations support multiple channels and inboxes, so you can route sales inquiries to one Slack channel and support cases to another.",
+    "category": "integrations",
+    "tags": ["slack", "email", "integrations", "notifications"]
+  },
+  {
+    "id": "art-014",
+    "title": "Working with Custom Fields",
+    "content": "Custom fields let you capture data specific to your business that the built-in fields don't cover. Define custom fields in Settings > Custom Fields or via POST /v2/custom_fields. Each field has a name, type (text, number, date, dropdown, checkbox, or multi-select), and optional validation rules (required, min/max length, regex pattern). Custom fields can be added to cases, customers, or articles. When creating or updating a resource, pass custom field values in the custom_fields object using the field's key. Custom field values are included in search indexes, so you can filter by them: GET /v2/cases?custom_fields.region=EMEA. Custom fields are also available in the export API and webhook payloads. Dropdown and multi-select fields require predefined options, which you set when creating the field and can update later without affecting existing data.",
+    "category": "customization",
+    "tags": ["custom-fields", "customization", "configuration", "data-model"]
+  }
+]
