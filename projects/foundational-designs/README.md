@@ -17,7 +17,7 @@ See [assets/architecture.md](assets/architecture.md) for the full system diagram
 
 | Module | Description |
 |--------|-------------|
-| [01-mcp-server/](01-mcp-server/) | MCP server auto-generated from OpenAPI spec, with tag filtering, curated tools, Docker distribution, and IDE configs |
+| [01-mcp-server/](01-mcp-server/) | MCP server auto-generated from OpenAPI spec, with tag filtering, curated tools, Docker/uv distribution, and IDE configs |
 | [02-skills/](02-skills/) | Four demo skills covering the full SKILL.md spec: basic tools, shell injection, subagent isolation, and safety controls |
 | [03-intelligence-service/](03-intelligence-service/) | FastAPI microservice with chat proxy (+ SSE streaming), document search, and structured extraction |
 
@@ -31,7 +31,7 @@ Developer workflow skills for working on this project live in [.cursor/skills/](
 
 **Yes.** Both pathways are achievable with minimal ops/infra work:
 
-- **The MCP server requires zero infrastructure.** You build a Docker image; users run it locally. Their IDE connects via stdio. Auth is their existing API token passed as an environment variable. No new servers, no new auth flows, no new network policies.
+- **The MCP server requires zero infrastructure.** You build a Docker image (or publish a Python package); users run it locally via `docker run` or `uvx`. Their IDE connects via stdio. Auth is their existing API token passed as an environment variable. No new servers, no new auth flows, no new network policies. Users who prefer not to install Docker (e.g., for security policy reasons) can use `uvx` with Python instead.
 
 - **The intelligence service is a single FastAPI app.** Rails makes HTTP POST requests — something it already does extensively. You deploy it the same way you deploy any Python service (ECS, Kubernetes, whatever you already run). No new protocols, no new dependencies on the Rails side beyond an HTTP client.
 
@@ -55,16 +55,16 @@ Users filter at startup with the `--tag` flag:
 
 ```bash
 # All 8 tools (default):
-python server_from_spec.py
+uvx acme-mcp-server             # or: docker run -i --rm -e RAILS_API_TOKEN acme-mcp
 
 # Just case management (3 tools):
-python server_from_spec.py --tag cases
+uvx acme-mcp-server --tag cases
 
 # Cases + customers (5 tools):
-python server_from_spec.py --tag cases --tag customers
+uvx acme-mcp-server --tag cases --tag customers
 ```
 
-**Why this matters with 50+ endpoints:** Loading all tools overwhelms the LLM's context window and degrades response quality. Tag filtering lets users load only what they need. A support agent integration loads `cases` + `customers` + `knowledge`. A monitoring bot loads just `internal`. Same Docker image, same spec, different tool sets.
+**Why this matters with 50+ endpoints:** Loading all tools overwhelms the LLM's context window and degrades response quality. Tag filtering lets users load only what they need. A support agent integration loads `cases` + `customers` + `knowledge`. A monitoring bot loads just `internal`. Same server, same spec, different tool sets.
 
 The `mock_openapi_spec.json` in `01-mcp-server/` demonstrates this with 4 tag groups across 8 operations. The `filter_spec_by_tags()` function in `server_from_spec.py` shows the implementation.
 
@@ -82,17 +82,17 @@ Skills reference MCP tools by their fully qualified name (`mcp__acme-platform__g
 
 **Local distributable vs. hosted remote:**
 
-| Aspect | Local (distributable Docker image) | Remote (hosted MCP server) |
+| Aspect | Local (distributable) | Remote (hosted MCP server) |
 |--------|-----------------------------------|-----------------------------|
 | Transport | stdio (stdin/stdout) | Streamable HTTP (HTTPS) |
 | Auth | User's API token as env var | OAuth 2.1 / API key headers |
 | Runs on | User's machine | Your infrastructure |
 | Scaling | One user per process | Multi-tenant, load-balanced |
-| Distribution | Docker image on registry | URL in IDE config |
+| Distribution | Docker image or `uvx` package | URL in IDE config |
 | Tools | Same | Same |
 | Skills | Same | Same |
 
-**Start with local distributable.** It requires zero infrastructure, is how most MCP servers are distributed today, and lets you validate which tools and skills users actually need. The Docker image you build now works for both — you just switch the entrypoint command from stdio to streamable-http when you're ready to host.
+**Start with local distributable.** It requires zero infrastructure, is how most MCP servers are distributed today, and lets you validate which tools and skills users actually need. Offer users two install options: Docker (`docker run`) for zero-dependency simplicity, or `uvx` for users who already have Python and prefer not to run Docker (common in security-conscious environments). Both run the same server code — the only difference is packaging.
 
 ### 5. What next-step complexities justify the Python microservice?
 
@@ -119,18 +119,22 @@ Each of these is a natural extension of the FastAPI service in `03-intelligence-
 ### Prerequisites
 
 - Python 3.11+
-- [uv](https://docs.astral.sh/uv/) for dependency management
-- Docker (for MCP server distribution demo)
+- [uv](https://docs.astral.sh/uv/) for dependency management and distribution
+- Docker (optional — alternative distribution path for the MCP server)
 - API keys for OpenAI and/or Google Gemini (only needed for intelligence service endpoints that call LLMs)
 
 ### Quick Start
 
 ```bash
-# MCP Server demo:
+# MCP Server demo (local development):
 cd 01-mcp-server
 uv sync
 python server_from_spec.py           # Start with all tools
 python server_from_spec.py --tag cases  # Start with just case tools
+
+# MCP Server demo (as users would run it):
+uvx acme-mcp-server                  # via uv (requires Python 3.11+)
+docker run -i --rm -e RAILS_API_TOKEN=xxx acme-mcp  # via Docker
 
 # Intelligence Service demo:
 cd 03-intelligence-service

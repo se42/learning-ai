@@ -9,7 +9,7 @@ Two independent pathways for adding AI capabilities to the Rails monolith.
                           │              USER'S MACHINE (IDE)               │
                           │                                                  │
                           │  ┌────────────┐     ┌─────────────────────────┐ │
-                          │  │            │     │   MCP Server (Docker)   │ │
+                          │  │            │     │ MCP Server (Docker/uv)  │ │
                           │  │  Cursor /  │────▶│                         │ │
                           │  │  Windsurf /│ MCP │  Auto-generated tools   │ │
                           │  │  Claude    │proto│  + Curated tools        │ │
@@ -59,9 +59,10 @@ Two independent pathways for adding AI capabilities to the Rails monolith.
 │                                         │                                         │
 │  Audience: Your users (developers)      │  Audience: Your Rails app (internal)    │
 │  Runs on: User's machine                │  Runs on: Your infrastructure           │
-│  Auth: User's own API token             │  Auth: None needed (internal network)   │
-│  Transport: stdio (local) or HTTP       │  Transport: HTTP/JSON                   │
-│  LLM: User's own (their IDE)            │  LLM: Service-controlled (you choose)   │
+│  Install: Docker image or uvx           │  Auth: None needed (internal network)   │
+│  Auth: User's own API token             │  Transport: HTTP/JSON                   │
+│  Transport: stdio (local) or HTTP       │  LLM: Service-controlled (you choose)   │
+│  LLM: User's own (their IDE)            │                                         │
 │                                         │                                         │
 │  Delivers:                              │  Delivers:                              │
 │  - API tools in the IDE                 │  - Chat proxy with streaming            │

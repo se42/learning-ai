@@ -1,7 +1,10 @@
-# Distributable MCP Server
+# Distributable MCP Server — Docker Distribution Path
 #
-# This image packages the MCP server for distribution to your users.
-# It supports two transport modes:
+# This image is one of two distribution options for the MCP server.
+# Users who prefer not to use Docker can run via uv instead:
+#   RAILS_API_TOKEN=xxx uvx acme-mcp-server
+#
+# This image supports two transport modes:
 #
 #   STDIO (default) — for local IDE integration:
 #     docker run -i --rm -e RAILS_API_TOKEN=xxx acme-mcp

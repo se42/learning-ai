@@ -8,3 +8,7 @@ dependencies = [
     "httpx>=0.27",
     "uvicorn>=0.30",
 ]
+
+[project.scripts]
+acme-mcp = "server_from_spec:main"
+acme-mcp-curated = "server_curated:main"

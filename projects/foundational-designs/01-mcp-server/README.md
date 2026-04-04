@@ -1,6 +1,6 @@
 # 01 — MCP Server from OpenAPI Spec
 
-This module demonstrates how to build an MCP server from an existing OpenAPI spec and distribute it as a Docker image for IDE integration.
+This module demonstrates how to build an MCP server from an existing OpenAPI spec and distribute it via Docker or uv for IDE integration.
 
 **Scenario:** Your team has a mature Rails monolith with ~50 API endpoints across 3 OpenAPI spec versions. You want to let your users' LLMs interact with the API on their behalf — from inside their IDE (Cursor, Windsurf, Claude Desktop). Users provide their existing Rails API token as an environment variable. The MCP server handles the rest.
 
@@ -130,19 +130,18 @@ LLM → triage_case(1024)     → complete triage summary
 
 ---
 
-## Distribution: Docker + IDE Configuration
+## Distribution: Docker or uv
 
-### Building the Docker Image
+Users can run the MCP server via **Docker** (zero-dependency, fully isolated) or **uv** (lightweight, no Docker required). Both run the same server code — the only difference is packaging.
 
-The `Dockerfile` packages the MCP server for distribution:
+**Docker** is the "just works" option: one command, no Python install needed, no dependency conflicts. **uv** (`uvx`) is for users who already have Python 3.11+ and prefer not to introduce Docker — common in security-conscious environments where Docker may require additional policy approvals.
+
+### Option A: Docker
 
 ```bash
+# Build the image:
 docker build -t acme-mcp .
-```
 
-The same image supports both transport modes. Users choose at runtime:
-
-```bash
 # STDIO mode (default) — for local IDE integration:
 docker run -i --rm -e RAILS_API_TOKEN=xxx acme-mcp
 
@@ -156,9 +155,29 @@ docker run -i --rm -e RAILS_API_TOKEN=xxx acme-mcp python server_from_spec.py --
 docker run -i --rm -e RAILS_API_TOKEN=xxx acme-mcp python server_curated.py
 ```
 
+### Option B: uv (Python)
+
+`uvx` runs the package directly — it handles the virtualenv and dependencies transparently, so the user experience is nearly as clean as Docker.
+
+```bash
+# STDIO mode (default):
+RAILS_API_TOKEN=xxx uvx acme-mcp-server
+
+# With tag filtering:
+RAILS_API_TOKEN=xxx uvx acme-mcp-server --tag cases
+
+# Using the curated server:
+RAILS_API_TOKEN=xxx uvx acme-mcp-server-curated
+
+# Streamable HTTP mode:
+RAILS_API_TOKEN=xxx uvx acme-mcp-server --transport streamable-http --port 8080
+```
+
+The `[project.scripts]` entry points in `pyproject.toml` make this work — `acme-mcp` and `acme-mcp-curated` map to the `main()` functions in `server_from_spec.py` and `server_curated.py` respectively.
+
 ### IDE Configuration
 
-Each IDE has its own config format and file location. Sample configs are in `ide_configs/`.
+Each IDE has its own config format and file location. Sample configs are in `ide_configs/`, with both Docker and uv variants for each IDE.
 
 **Cursor** — `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
 ```json
@@ -167,9 +186,13 @@ Each IDE has its own config format and file location. Sample configs are in `ide
     "acme-platform": {
       "command": "docker",
       "args": ["run", "-i", "--rm", "-e", "RAILS_API_TOKEN", "acme-mcp:latest"],
-      "env": {
-        "RAILS_API_TOKEN": "your-token-here"
-      }
+      "env": { "RAILS_API_TOKEN": "your-token-here" }
+    },
+    "acme-platform-uv": {
+      "_comment": "Alternative: run via uvx (requires Python 3.11+ and uv)",
+      "command": "uvx",
+      "args": ["acme-mcp-server"],
+      "env": { "RAILS_API_TOKEN": "your-token-here" }
     }
   }
 }
@@ -182,9 +205,13 @@ Each IDE has its own config format and file location. Sample configs are in `ide
     "acme-platform": {
       "command": "docker",
       "args": ["run", "-i", "--rm", "-e", "RAILS_API_TOKEN", "acme-mcp:latest"],
-      "env": {
-        "RAILS_API_TOKEN": "your-token-here"
-      }
+      "env": { "RAILS_API_TOKEN": "your-token-here" }
+    },
+    "acme-platform-uv": {
+      "_comment": "Alternative: run via uvx (requires Python 3.11+ and uv)",
+      "command": "uvx",
+      "args": ["acme-mcp-server"],
+      "env": { "RAILS_API_TOKEN": "your-token-here" }
     }
   }
 }
@@ -197,13 +224,19 @@ Each IDE has its own config format and file location. Sample configs are in `ide
     "acme-platform": {
       "command": "docker",
       "args": ["run", "-i", "--rm", "-e", "RAILS_API_TOKEN", "acme-mcp:latest"],
-      "env": {
-        "RAILS_API_TOKEN": "your-token-here"
-      }
+      "env": { "RAILS_API_TOKEN": "your-token-here" }
+    },
+    "acme-platform-uv": {
+      "_comment": "Alternative: run via uvx (requires Python 3.11+ and uv)",
+      "command": "uvx",
+      "args": ["acme-mcp-server"],
+      "env": { "RAILS_API_TOKEN": "your-token-here" }
     }
   }
 }
 ```
+
+Users pick one — `acme-platform` (Docker) or `acme-platform-uv` — and remove the other. In practice you'd document both and let users choose based on their environment.
 
 ### Transport Comparison
 
@@ -216,7 +249,7 @@ Each IDE has its own config format and file location. Sample configs are in `ide
 | State | Per-process | Per-session |
 | When to use | Starting out, distributable image | Production, hosted service |
 
-Start with stdio. It's simpler, requires no infrastructure, and is how most MCP servers are distributed today. Move to streamable HTTP when you need centralized control, multi-tenant auth, or want to avoid distributing Docker images.
+Start with stdio. It's simpler, requires no infrastructure, and is how most MCP servers are distributed today. Users choose Docker or uv based on their environment — both use stdio by default. Move to streamable HTTP when you need centralized control, multi-tenant auth, or want to eliminate client-side installation entirely.
 
 ---
 
@@ -224,9 +257,8 @@ Start with stdio. It's simpler, requires no infrastructure, and is how most MCP 
 
 ### Prerequisites
 
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
-- Docker (for container distribution)
+- Python 3.11+ and [uv](https://docs.astral.sh/uv/) — for development and uv-based distribution
+- Docker — for Docker-based distribution (optional if using uv)
 
 ### Local Development
 
@@ -276,7 +308,7 @@ Note: Since this is a demo with a mock spec, API calls will fail (there's no rea
 
 ## What's Next
 
-This module covers the foundation: spec-to-server generation, tag filtering, curated tools, and Docker distribution. The next modules build on this:
+This module covers the foundation: spec-to-server generation, tag filtering, curated tools, and dual distribution (Docker + uv). The next modules build on this:
 
 - **02-skills/** — Composing tools into higher-level skills that encode multi-step workflows
-- **03-intelligence-service/** — The path from distributable Docker image to hosted MCP server with OAuth, multi-tenancy, and observability
+- **03-intelligence-service/** — The path from distributable MCP server to hosted MCP server with OAuth, multi-tenancy, and observability

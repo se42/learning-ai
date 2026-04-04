@@ -126,6 +126,32 @@ Claude ran automated verification for both modules:
 
 This caught the deprecation warning and confirmed everything works.
 
+## 7. Review, Questions, and Iteration
+
+After the initial build was complete, we shifted into a review cycle. This
+is where the human leads and the AI assists:
+
+- Read through the generated material — READMEs, code, architecture docs
+- Asked questions about design decisions ("Would it make sense to offer
+  both Docker and uv as distribution paths?")
+- Discussed trade-offs (Docker vs uv vs Go binaries) and made decisions
+- Fed those decisions back as concrete change requests ("Update the
+  project material to present Docker and uv consistently")
+
+Claude then made targeted edits across 9 files to align the entire project
+with the new "Docker or uv" distribution strategy — updating READMEs, IDE
+configs, the architecture diagram, pyproject.toml entry points, and the
+skills distribution guidance.
+
+**Why this matters:** The initial build is a draft, not a deliverable. The
+review cycle is where domain knowledge, user empathy, and strategic thinking
+shape the output into something that actually fits your team and users. AI
+can research and build quickly, but the human's job is to ask "does this
+make sense for our people?" and steer accordingly. This phase is also where
+you catch assumptions that seemed reasonable in isolation but don't hold up
+when you read the whole thing end-to-end — like the assumption that all
+users would be willing to run Docker.
+
 ## Timeline
 
 The entire process — from reading the brief to verified deliverable — took
@@ -139,6 +165,7 @@ one conversation session. The rough breakdown:
 | Implementation | 2 parallel background agents + direct skill writing |
 | Integration | Developer skills, architecture diagram, root README |
 | Verification | Automated tests on both modules |
+| Review + Iteration | Human-led review, questions, and targeted edits across the project |
 
 ## Tips for Your Own Projects
 

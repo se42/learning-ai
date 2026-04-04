@@ -230,7 +230,20 @@ LLM formats output per the skill's specification
 
 Without skills, the LLM sees a flat list of tools and must figure out workflows on its own. With skills, the LLM has domain-specific guidance: which tools to combine, what business rules to follow, and what the output should look like.
 
-**Distributing skills with your MCP server:** When you ship a Docker image containing your MCP server, you can also include skills in a well-known directory. Users copy them into their IDE's skills directory (`.claude/skills/`, `.cursor/skills/`, etc.). The MCP server provides the tools; the skills provide the context to use them well.
+**Distributing skills with your MCP server:** When you ship your MCP server (whether as a Docker image or a uv/Python package), you can also include skills in a well-known directory. Users copy them into their IDE's skills directory (`.claude/skills/`, `.cursor/skills/`, etc.). The MCP server provides the tools; the skills provide the context to use them well.
+
+Some skills may require your Python package code to execute (e.g., scripts in the `scripts/` directory). In this case, document the system requirements as either Docker or Python 3.11+ with uv — matching the same two distribution paths as the MCP server itself:
+
+```markdown
+## System Requirements
+- One of: Docker, or Python 3.11+ with uv
+
+## Steps
+1. If using Docker: `docker run ghcr.io/yourorg/mcp-tools run-analysis --input ...`
+2. If using uv: `uvx acme-mcp-server-tools run-analysis --input ...`
+```
+
+The LLM executing the skill reads the user's environment and picks the right invocation path.
 
 ---
 
