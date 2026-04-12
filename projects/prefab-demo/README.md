@@ -62,6 +62,24 @@ Prefab does **not** theme the assistant's streamed markdown. It attaches **rich 
 
 **The common thread**: the agent calls a tool, but the **output is meant for a person** who needs to read, compare, or act on it. Text works fine for short answers; Prefab is for the cases where a real UI would save time or reduce mistakes.
 
+## The big picture: one service, many clients
+
+The most important thing to understand about Prefab is where it sits in your architecture. If you're running a Python-based AI microservice (FastAPI, FastMCP, or both), **that service is the single source for both agent logic and user-facing interactions**. Prefab is how the AI team owns the presentation layer for those interactions without needing a frontend team or a build pipeline.
+
+**Same code, different transports.** A `PrefabApp` built in Python works in all of these contexts:
+
+- **IDE via MCP** — Cursor, Claude Desktop, or ChatGPT connect to your MCP server, call a tool, and render the Prefab UI in chat. Button clicks route back through MCP (`CallTool`).
+- **Web app via HTTP** — Your React frontend makes an API call (maybe proxied through Rails) to your FastAPI intelligence service. The service returns the Prefab JSON or a self-contained HTML page (`PrefabApp.html()`). Button clicks route back via HTTP (`Fetch`). The React team just embeds a container; the AI team owns everything inside it.
+- **Dev preview** — `fastmcp dev apps` runs the server and opens a browser. The AI team tests interactive flows locally without an IDE, a Rails app, or any infrastructure.
+
+The AI team writes the `PrefabApp` once. It renders in all three places.
+
+**Why this matters for teams with a separate frontend.** Without Prefab, every AI-driven interaction that needs structured input from a user requires coordination: the AI team defines the data shape, the frontend team builds a React component, both teams agree on the API contract, and it ships after a round of review. With Prefab, the AI team defines the data shape *and* the UI in the same Python codebase. The frontend team's only job is carving out a container — an iframe or a div — and saying "render whatever the intelligence service returns here." The AI team can iterate on forms, add fields, swap layouts, and ship changes without touching the React app.
+
+**Prefab and workflow orchestration (e.g. LangGraph).** Prefab handles presentation — what the human sees and clicks on. LangGraph (or any orchestration framework with human-in-the-loop support) handles execution — what happens before and after the human weighs in. They complement each other: a LangGraph graph hits an interrupt node and pauses; your service takes the pending data, builds a Prefab UI for the human to review and approve, collects the decisions, and feeds them back to the graph as the interrupt response. The graph resumes. Prefab doesn't replace your orchestration; it gives the orchestration a real UI for the human steps.
+
+**The presentation isn't cutting-edge, and that's fine.** Prefab's components (built on shadcn/ui) are clean and professional but won't match a custom design system. For internal tools, human-in-the-loop workflows, and "the AI team needs to ask the user something" scenarios, that's the right trade-off. If a specific customer-facing interaction eventually needs pixel-perfect branding, the frontend team can build a proper React component for that one case. But for the first wave of AI-driven interactions, Prefab lets the AI team move without waiting in the frontend queue.
+
 ## Try it in a browser (dev preview)
 
 From the **repository root**:
