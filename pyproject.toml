@@ -8,6 +8,7 @@ dependencies = [
     "anthropic>=0.40.0",
     "beanie[ocsp]>=2.0.0",
     "fastapi[standard]>=0.116.1",
+    "fastmcp[apps]>=3.2.3",
     "langchain[anthropic,community,openai]>=0.3.26",
     "langgraph>=0.5.4",
     "rich>=14.1.0",
