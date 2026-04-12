@@ -74,6 +74,13 @@ The most important thing to understand about Prefab is where it sits in your arc
 
 The AI team writes the `PrefabApp` once. It renders in all three places.
 
+**How the web app path actually works.** When your React frontend requests a Prefab interaction from the AI service (proxied through Rails or called directly), the service can return one of two things:
+
+- **Self-contained HTML** (`PrefabApp.html()`) — a complete mini page bundling the component tree, state, and renderer. React drops it into an iframe via `srcdoc`. The iframe handles everything: rendering, client-side interactivity, and `Fetch` calls back to the AI service for button actions. The React app doesn't need to know anything about Prefab. This is the easiest path.
+- **Raw JSON** (`PrefabApp.to_json()`) — the structured component tree (headings, tables, buttons, actions) as a plain dict. React loads the Prefab renderer library as a dependency and renders the tree directly in the DOM — no iframe, tighter integration. Or, if the frontend team wants full control, they can skip the Prefab renderer entirely and write their own code that walks the JSON tree and maps each component type to their existing design system components.
+
+In both cases, the AI service is the source of truth for what the user sees. Rails is just a proxy. The frontend provides a container and decides how much rendering responsibility it wants to take on.
+
 **Why this matters for teams with a separate frontend.** Without Prefab, every AI-driven interaction that needs structured input from a user requires coordination: the AI team defines the data shape, the frontend team builds a React component, both teams agree on the API contract, and it ships after a round of review. With Prefab, the AI team defines the data shape *and* the UI in the same Python codebase. The frontend team's only job is carving out a container — an iframe or a div — and saying "render whatever the intelligence service returns here." The AI team can iterate on forms, add fields, swap layouts, and ship changes without touching the React app.
 
 **Prefab and workflow orchestration (e.g. LangGraph).** Prefab handles presentation — what the human sees and clicks on. LangGraph (or any orchestration framework with human-in-the-loop support) handles execution — what happens before and after the human weighs in. They complement each other: a LangGraph graph hits an interrupt node and pauses; your service takes the pending data, builds a Prefab UI for the human to review and approve, collects the decisions, and feeds them back to the graph as the interrupt response. The graph resumes. Prefab doesn't replace your orchestration; it gives the orchestration a real UI for the human steps.
