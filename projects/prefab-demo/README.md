@@ -46,9 +46,21 @@ The key pieces:
 
 `FastMCPApp` offers a nice separation of `@app.ui()` entry points from `@app.tool()` UI-only backends (hidden from the model's tool list). However, as of fastmcp 3.2.3 / Cursor 3.0.16, `@app.tool()` backend tools registered through a `FastMCPApp` provider are **not routable** via the parent server's `call_tool` — the host can't find them when the iframe fires `CallTool`. Registering everything on one flat `@mcp.tool()` server works reliably.
 
-## MCP Apps are for tool results, not chat styling
+## What MCP Apps / Prefab are good for
 
-Prefab does **not** theme the assistant's streamed markdown. It attaches **rich interactive UI to MCP tool results** in hosts that implement the [MCP Apps extension](https://modelcontextprotocol.io/extensions/apps/overview). Cursor 2.6+ renders these as sandboxed iframes in chat.
+Prefab does **not** theme the assistant's streamed markdown. It attaches **rich interactive UI to MCP tool results** in hosts that implement the [MCP Apps extension](https://modelcontextprotocol.io/extensions/apps/overview). Cursor 2.6+ renders these as sandboxed iframes in chat. The question is: when would you actually reach for this instead of just letting the model write a text answer?
+
+**Review and triage workflows** — The incident triage demo in this project is a good example. Any time you have a list of items that need human judgment (support cases, code review findings, deploy candidates, test failures), a table with action buttons is faster and less error-prone than reading paragraphs and typing decisions back. A support engineer working through cases in their IDE could triage, approve, and dismiss directly in the chat without switching windows.
+
+**Dashboards and monitoring** — Service health, deployment status, API latency, error rates. These are the kind of multi-row, multi-column data sets that are painful to read as JSON or prose. Prefab has sortable tables, bar/line/area/pie charts, progress bars, and metric cards. The agent fetches the data; the human reads a real dashboard instead of squinting at numbers in a chat bubble.
+
+**Data entry and structured input** — Forms with typed fields, dropdowns, date pickers, and validation. When the agent needs structured input from you (not just a free-text reply), a form gives you labeled fields and constraints. Think: filing a bug report, creating a config entry, or submitting parameters for a batch job — all without leaving the conversation.
+
+**Exploratory browsing** — Search boxes wired to `CallTool`, paginated tables, accordion details, tabbed views. When a tool returns a large result set (employees, inventory, log entries), the human can search, sort, and drill into rows client-side without the agent re-running the query for every follow-up.
+
+**Approval gates and human-in-the-loop** — Buttons that call backend tools to record a decision, then `SendMessage` to feed the result back into chat. This is the pattern our demo uses: the agent opens the UI, the human makes choices, the choices re-enter the conversation as structured input for the agent's next step. Useful anywhere you want the agent to propose and the human to approve before the agent proceeds (deployments, data migrations, bulk operations).
+
+**The common thread**: the agent calls a tool, but the **output is meant for a person** who needs to read, compare, or act on it. Text works fine for short answers; Prefab is for the cases where a real UI would save time or reduce mistakes.
 
 ## Try it in a browser (dev preview)
 
